@@ -85,7 +85,7 @@ public:
 		for(int i = 0; i < epsilon_transitions.size(); ++i){
 			std::cout << "--- E ---> " << epsilon_transitions.at(i) << std::endl;
 		}
-		std::cout << "Has callback function: " << ((callback_function) ? "Yes" : "No") << std::endl;
+		std::cout << "Has callback function: " << ((has_functor) ? "Yes" : "No") << std::endl;
 		std::cout << std::endl;
 	}
 	#endif
