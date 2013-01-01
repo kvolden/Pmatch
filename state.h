@@ -4,6 +4,7 @@
 #include <vector>
 #include <functional>
 #include "rule.h"
+#include "clone_monitor.h"
 
 template <typename Functor>
 class State {			
@@ -12,6 +13,7 @@ private:
 	std::vector<Rule<Functor>> transition_rules;
 	std::vector<State<Functor>*> epsilon_transitions;
 	Functor functor;
+	Clone_monitor* clone_monitor;
 	
 public:
 	State(){
@@ -38,11 +40,14 @@ public:
 	void step(Inputs... inputs){
 		if(enabled){
 			for(int i = 0; i < transition_rules.size(); i++){
-				transition_rules.at(i).step(inputs...);
+				if(transition_rules.at(i).step(inputs...)){
+				    clone_monitor->add_transition(this, transition_rules.at(i).get_target_state(), false);
+				}
 			}
 			enabled = false;
 			if(stay_enabled){
 				mark_enable();
+				clone_monitor->add_transition(this, this, false);
 			}
 		}
 	}
@@ -51,6 +56,7 @@ public:
 		do_enable = true;
 		for(int i = 0; i < epsilon_transitions.size(); i++){
 			epsilon_transitions.at(i)->mark_enable();
+			clone_monitor->add_transition(this, epsilon_transitions.at(i), true);
 		}
 	}
 	
@@ -76,6 +82,10 @@ public:
 	bool is_active(){
 		return enabled;
 	}
+	
+	void set_clone_monitor(Clone_monitor* _clone_monitor){
+	    clone_monitor = _clone_monitor;
+    }
 	
 	#ifdef PMATCH_DEBUG
 	void debug_output_structure(){

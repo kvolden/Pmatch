@@ -7,6 +7,7 @@
 #include <functional>
 #include <systemc.h>
 #include "state.h"
+#include "clone_monitor.h"
 
 #ifdef PMATCH_DEBUG
 #include <iostream>
@@ -16,6 +17,7 @@ template <class Functor=std::function<void()>>
 class PMatch : public sc_module{
 private:
 	std::deque<State<Functor>> states;
+	Clone_monitor clone_monitor;
 	
 	int max(int a, int b){
 		return (a < b) ? b : a;
@@ -200,7 +202,6 @@ private:
 		}
 	}
 	
-
 	
 public:
 	PMatch(sc_module_name name) : sc_module(name){ }
@@ -227,11 +228,17 @@ public:
 		build_from_expression(reg_exp, &states.front(), NULL, functions);
 		states.front().set_stay_enabled(continuous);
 		
+		for(int i = 0; i < states.size(); ++i){                                 // Pass states clone monitor pointer
+		    states.at(i).set_clone_monitor(&clone_monitor);
+		}
+		
+		clone_monitor.add_transition(NULL, &states.front(), false);             // Add initial transition
 		states.front().mark_enable();
 		
 		for(int i = 0; i < states.size(); ++i){									// Update-enabled all to get all epsilon transitions from S0 too
 			states.at(i).update_enabled();
 		}
+		clone_monitor.step_complete();
 	}
 
 	template <typename... Inputs>
@@ -243,6 +250,8 @@ public:
 		for(int i = 0; i < states.size(); ++i){
 			states.at(i).update_enabled();
 		}
+	    clone_monitor.step_complete();
+
 	}
 	
 	void restart(){
@@ -250,6 +259,8 @@ public:
 			states.at(i).disable();
 		}
 		states.front().mark_enable();
+		clone_monitor.restart();
+		clone_monitor.add_transition(NULL, &states.front());
 		for(int i = 0; i < states.size(); ++i){									// Update-enabled all to get all epsilon transitions from S0 too
 			states.at(i).update_enabled();
 		}
@@ -262,6 +273,14 @@ public:
 		}
 		return !contains_active_states;
 	}
+	
+    std::vector<int> get_clones_evolution(){
+        return clone_monitor.get_clones_evolution();
+    }
+    
+    int get_num_of_clones(){
+        return clone_monitor.get_num_of_clones();
+    }
 	
 	#ifdef PMATCH_DEBUG
 	void debug_output_structure(){

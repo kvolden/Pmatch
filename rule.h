@@ -130,7 +130,7 @@ public:
 	}
 	
 	template <typename... Inputs>												// Variadic templates = C++0x
-	void step(Inputs... inputs){												// Steps the rule, enables target if conditions are met
+	bool step(Inputs... inputs){												// Steps the rule, enables target if conditions are met
 		bool condition_met = false;
 		std::vector<bool> sub_results = recursive_compare(0, inputs...);
 		std::vector<bool> anded(1, sub_results.front());						// Push first sub result onto "anded" vector
@@ -151,7 +151,13 @@ public:
 		if(condition_met){
 			target_state->mark_enable();
 		}
+		
+		return condition_met;
 	}
+	
+	State<Functor>* get_target_state(){
+	    return target_state;
+    }
 	
 	#ifdef PMATCH_DEBUG
 	void debug_output_structure(){
