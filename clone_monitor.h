@@ -60,6 +60,7 @@ public:
     
     void restart(){
         transitions_timeline.clear();
+        clone_number_timeline.clear();
         step = 0;
     }
     
